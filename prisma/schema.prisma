@@ -1,0 +1,271 @@
+// LAYL E-commerce Database Schema
+// Production-ready schema for minimalist skincare brand
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model with role-based access
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          Role      @default(USER)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orders    Order[]
+  reviews   Review[]
+  addresses Address[]
+
+  @@index([email])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// Category model with accent color system
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  accentColor String // Muted Sage, Clay Red, Dusty Blue, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products Product[]
+
+  @@index([slug])
+}
+
+// Product model with full details
+model Product {
+  id                String   @id @default(cuid())
+  name              String
+  slug              String   @unique
+  description       String
+  keyIngredients    String[] // Array of key ingredients
+  concentration     String? // e.g., "5%", "10%"
+  skinType          String[] // Array: ["Oily", "Dry", "Combination", "Sensitive"]
+  whatItDoes        String // Short description
+  howToUse          String
+  fullIngredients   String // Complete INCI list
+  
+  // Pricing & Inventory
+  price             Float
+  mrp               Float // Maximum Retail Price (Indian compliance)
+  size              String // e.g., "30ml", "50g"
+  stock             Int     @default(0)
+  
+  // Indian Compliance
+  batchNo           String?
+  mfgDate           DateTime?
+  expDate           DateTime?
+  
+  // Media
+  images            String[] // Array of Cloudinary URLs
+  thumbnailUrl      String?
+  
+  // Relations
+  categoryId        String
+  category          Category @relation(fields: [categoryId], references: [id])
+  
+  // Metadata
+  featured          Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  orderItems OrderItem[]
+  reviews    Review[]
+
+  @@index([slug])
+  @@index([categoryId])
+  @@index([featured])
+}
+
+// Order model with comprehensive tracking
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique @default(cuid())
+  
+  // Customer info (nullable for guest checkout)
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id])
+  
+  // Guest customer details
+  guestEmail      String?
+  guestName       String?
+  guestPhone      String?
+  
+  // Shipping address
+  shippingAddress Json // Stores complete address object
+  billingAddress  Json? // Optional separate billing address
+  
+  // Order details
+  subtotal        Float
+  discount        Float       @default(0)
+  shippingCost    Float       @default(0)
+  tax             Float       @default(0)
+  totalAmount     Float
+  
+  // Payment
+  paymentMethod   PaymentMethod
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentId       String? // Razorpay payment ID
+  razorpayOrderId String? // Razorpay order ID
+  
+  // Order status
+  status          OrderStatus @default(CREATED)
+  
+  // Coupon
+  couponCode      String?
+  couponDiscount  Float?
+  
+  // Tracking
+  trackingNumber  String?
+  estimatedDelivery DateTime?
+  deliveredAt     DateTime?
+  
+  // Metadata
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum OrderStatus {
+  CREATED
+  PAID
+  PROCESSING
+  PACKED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  RAZORPAY_UPI
+  RAZORPAY_CARD
+  RAZORPAY_NETBANKING
+  RAZORPAY_WALLET
+  COD
+  STRIPE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// Order items
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  price     Float // Price at time of purchase
+  
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// Product reviews
+model Review {
+  id        String   @id @default(cuid())
+  
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  rating    Int // 1-5
+  title     String?
+  comment   String
+  verified  Boolean  @default(false) // Verified purchase
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([userId])
+}
+
+// Coupon/Discount codes
+model Coupon {
+  id            String       @id @default(cuid())
+  code          String       @unique
+  description   String?
+  
+  discountType  DiscountType
+  value         Float // Percentage or fixed amount
+  
+  minPurchase   Float?
+  maxDiscount   Float? // Max discount for percentage type
+  
+  usageLimit    Int? // Total usage limit
+  usageCount    Int          @default(0)
+  
+  validFrom     DateTime
+  validUntil    DateTime
+  
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([code])
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+// User addresses
+model Address {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  fullName    String
+  phone       String
+  addressLine1 String
+  addressLine2 String?
+  city        String
+  state       String
+  pincode     String
+  country     String  @default("India")
+  
+  isDefault   Boolean @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
