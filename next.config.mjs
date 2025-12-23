@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Force webpack instead of turbopack
-    turbo: false,
+    // Empty config - let Next.js use defaults
 };
 
 export default nextConfig;
