@@ -7,6 +7,9 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 
+// Force dynamic rendering to prevent build-time errors
+export const dynamic = 'force-dynamic';
+
 interface Product {
     id: string;
     name: string;
