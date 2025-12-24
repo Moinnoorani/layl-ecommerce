@@ -2,8 +2,8 @@ import Link from 'next/link';
 
 export default function Footer() {
     return (
-        <footer className="bg-container border-t border-border mt-40">
-            <div className="container-custom pt-20 pb-12">
+        <footer className="bg-container border-t border-border mt-52">
+            <div className="container-custom pt-24 pb-16">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     {/* Brand */}
                     <div>
@@ -91,7 +91,7 @@ export default function Footer() {
                 </div>
 
                 {/* Bottom Bar */}
-                <div className="mt-12 pt-10 border-t border-border">
+                <div className="mt-16 pt-12 border-t border-border">
                     <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                         <p className="text-sm text-text-muted">
                             © {new Date().getFullYear()} LAYL. All rights reserved.
