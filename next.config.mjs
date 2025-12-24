@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Empty config - let Next.js use defaults
+    // Configuration for Next.js 15
 };
 
 export default nextConfig;
